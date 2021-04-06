@@ -26,18 +26,18 @@ func main() {
 	runServer()
 }
 
-func runServer() {
+func runServer() error {
+	clientset, err := configKubeClient(kubeconfigPath)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
 	e := echo.New()
 	e.GET("/logs", func(c echo.Context) error {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
 		enc := json.NewEncoder(c.Response())
-
-		clientset, err := configKubeClient(kubeconfigPath)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
 
 		label := extractLabel(c.QueryParam("label"))
 
@@ -50,20 +50,22 @@ func runServer() {
 		for {
 			if e, ok := <-watch.ResultChan(); ok {
 				event := toEvent(e.Object)
-				if event.InvolvedObject.Kind != "Pod" {
+
+				finder := selectFinder(clientset, namespace, event.InvolvedObject.Kind)
+
+				if finder == nil {
 					fmt.Printf("Resource Type '%s' Not Supported Yet\n", event.InvolvedObject.Kind)
 					continue
 				}
 
-				pod, err := findPod(clientset, namespace, event.InvolvedObject.Name)
+				exists, err := finder.exists(event.InvolvedObject.Name, label)
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
 
 				eventLog := toEventLog(e.Object)
-
-				if !podHasLabel(pod, label) {
+				if !exists {
 					fmt.Printf("DISCART: %v\n", eventLog)
 				} else {
 					fmt.Println(eventLog)
@@ -82,11 +84,18 @@ func runServer() {
 		return nil
 	})
 	e.Logger.Fatal(e.Start(":1323"))
+	return nil
 }
 
-func podHasLabel(pod *corev1.Pod, l Label) bool {
-	labels := pod.Labels
-	return labels[l.Name] == l.Value
+func selectFinder(clientset *kubernetes.Clientset, namespace string, kind string) FindResource {
+	switch kind {
+	case "Pod":
+		return &PodFinder{clientset, namespace}
+	case "Service":
+		return &ServiceFinder{clientset, namespace}
+	default:
+		return nil
+	}
 }
 
 func toEvent(eventObject runtime.Object) *corev1.Event {
