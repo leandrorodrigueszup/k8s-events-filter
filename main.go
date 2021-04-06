@@ -19,11 +19,6 @@ const (
 	defaultNamespace = "charles"
 )
 
-type label struct {
-	name  string
-	value string
-}
-
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 // https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/#directly-accessing-the-rest-api
 // https://kubernetes.io/docs/reference/kubernetes-api/workloads-resources/
@@ -89,9 +84,9 @@ func runServer() {
 	e.Logger.Fatal(e.Start(":1323"))
 }
 
-func podHasLabel(pod *corev1.Pod, l label) bool {
+func podHasLabel(pod *corev1.Pod, l Label) bool {
 	labels := pod.Labels
-	return labels[l.name] == l.value
+	return labels[l.Name] == l.Value
 }
 
 func toEvent(eventObject runtime.Object) *corev1.Event {
@@ -105,9 +100,9 @@ func toEventLog(eventObject runtime.Object) *EventLog {
 	return newEventLog(toEvent(eventObject))
 }
 
-func extractLabel(l string) label {
+func extractLabel(l string) Label {
 	keyValue := strings.Split(l, "=")
-	return label{keyValue[0], keyValue[1]}
+	return Label{keyValue[0], keyValue[1]}
 }
 
 func getNamespaceOr(c echo.Context, defaultNamespace string) string {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,31 +16,21 @@ type EventLog struct {
 	Message string
 }
 
-func filterEventsByPodName(clientset *kubernetes.Clientset, podName string, namespace string) ([]*EventLog, error) {
-	fieldSelector := fmt.Sprintf("involvedObject.kind=Pod,involvedObject.name=%s", podName)
-	events, err := clientset.CoreV1().Events(namespace).List(context.TODO(), metav1.ListOptions{FieldSelector: fieldSelector})
-	return toEventLogList(events), err
-}
-
 func watchEventsByPodName(clientset *kubernetes.Clientset, namespace string) (watch.Interface, error) {
 	return clientset.CoreV1().
 		Events(namespace).
 		Watch(context.TODO(), metav1.ListOptions{})
 }
 
-func toEventLogList(eventList *corev1.EventList) []*EventLog {
-	var eventLogList []*EventLog
-	for _, item := range eventList.Items {
-		eventLogList = append(eventLogList, newEventLog(&item))
-	}
-	return eventLogList
-}
-
 func newEventLog(event *corev1.Event) *EventLog {
 	return &EventLog{
 		Type:    event.Type,
 		Reason:  event.Reason,
-		Object:  event.InvolvedObject.Kind + "/" + event.InvolvedObject.Name,
+		Object:  formatObjectDescription(event.InvolvedObject),
 		Message: event.Message,
 	}
+}
+
+func formatObjectDescription(involvedObject corev1.ObjectReference) string {
+	return involvedObject.Kind + "/" + involvedObject.Name
 }
