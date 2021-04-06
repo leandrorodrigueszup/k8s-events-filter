@@ -10,6 +10,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+func findPod(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.Pod, error) {
+	return clientset.CoreV1().
+		Pods(namespace).
+		Get(context.TODO(), name, metav1.GetOptions{})
+}
+
 func filterPodsByLabel(clientset *kubernetes.Clientset, labels map[string]string, namespace string) ([]string, error) {
 	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), prepareListOptions(labels))
 	if err != nil {

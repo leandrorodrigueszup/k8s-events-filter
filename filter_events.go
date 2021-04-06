@@ -23,21 +23,21 @@ func filterEventsByPodName(clientset *kubernetes.Clientset, podName string, name
 	return toEventLogList(events), err
 }
 
-func watchEventsByPodName(clientset *kubernetes.Clientset, podName string, namespace string) (watch.Interface, error) {
-	//fieldSelector := fmt.Sprintf("involvedObject.kind=Pod,involvedObject.name=%s", podName)
-	watch, err := clientset.CoreV1().Events(namespace).Watch(context.TODO(), metav1.ListOptions{})
-	return watch, err
+func watchEventsByPodName(clientset *kubernetes.Clientset, namespace string) (watch.Interface, error) {
+	return clientset.CoreV1().
+		Events(namespace).
+		Watch(context.TODO(), metav1.ListOptions{})
 }
 
 func toEventLogList(eventList *corev1.EventList) []*EventLog {
 	var eventLogList []*EventLog
 	for _, item := range eventList.Items {
-		eventLogList = append(eventLogList, newEventLog(item))
+		eventLogList = append(eventLogList, newEventLog(&item))
 	}
 	return eventLogList
 }
 
-func newEventLog(event corev1.Event) *EventLog {
+func newEventLog(event *corev1.Event) *EventLog {
 	return &EventLog{
 		Type:    event.Type,
 		Reason:  event.Reason,
