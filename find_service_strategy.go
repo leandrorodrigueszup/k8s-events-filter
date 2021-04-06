@@ -25,7 +25,7 @@ func (f *ServiceFinder) exists(name string, label Label) (bool, error) {
 	return serviceHasLabel(service, label), nil
 }
 
-func serviceHasLabel(pod *corev1.Service, l Label) bool {
-	labels := pod.Labels
+func serviceHasLabel(service *corev1.Service, l Label) bool {
+	labels := service.Labels
 	return labels[l.Name] == l.Value
 }

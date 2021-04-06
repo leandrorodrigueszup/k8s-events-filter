@@ -93,6 +93,8 @@ func selectFinder(clientset *kubernetes.Clientset, namespace string, kind string
 		return &PodFinder{clientset, namespace}
 	case "Service":
 		return &ServiceFinder{clientset, namespace}
+	case "Deployment":
+		return &DeploymentFinder{clientset, namespace}
 	default:
 		return nil
 	}
