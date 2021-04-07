@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -12,59 +12,30 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func logsHandler(clientset *kubernetes.Clientset) echo.HandlerFunc {
+func eventsHandler(clientset *kubernetes.Clientset) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
 		enc := json.NewEncoder(c.Response())
 
-		label := extractLabel(c.QueryParam("label"))
+		label := getLabel(c.QueryParam("label"))
 
 		namespace := getNamespaceOr(c, defaultNamespace)
-		watch, err := watchEventsByPodName(clientset, namespace)
-		if err != nil {
-			return err
-		}
 
-		for {
-			if e, ok := <-watch.ResultChan(); ok {
-				event := toEvent(e.Object)
+		log.SetPrefix(label.Name + "[" + label.Value + "] - ")
+		log.SetFlags(0)
 
-				finder := selectFinder(clientset, namespace, event.InvolvedObject.Kind)
-
-				if finder == nil {
-					fmt.Printf("Resource Type '%s' Not Supported Yet\n", event.InvolvedObject.Kind)
-					continue
-				}
-
-				exists, err := finder.exists(event.InvolvedObject.Name, label)
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
-
-				eventLog := toEventLog(e.Object)
-				if !exists {
-					fmt.Printf("DISCART: %v\n", eventLog)
-				} else {
-					fmt.Println(eventLog)
-
-					if err := enc.Encode(eventLog); err != nil {
-						fmt.Println(err)
-						continue
-					}
-				}
-				c.Response().Flush()
-			} else {
-				fmt.Println("Stop watching")
-				break
+		filter(clientset, namespace, label, func(eventLog *EventLog) {
+			if err := enc.Encode(eventLog); err != nil {
+				log.Println(err)
 			}
-		}
+			c.Response().Flush()
+		})
 		return nil
 	}
 }
 
-func extractLabel(l string) Label {
+func getLabel(l string) Label {
 	keyValue := strings.Split(l, "=")
 	return Label{keyValue[0], keyValue[1]}
 }
@@ -95,8 +66,4 @@ func toEvent(eventObject runtime.Object) *corev1.Event {
 	var event corev1.Event
 	json.Unmarshal(bytes, &event)
 	return &event
-}
-
-func toEventLog(eventObject runtime.Object) *EventLog {
-	return newEventLog(toEvent(eventObject))
 }

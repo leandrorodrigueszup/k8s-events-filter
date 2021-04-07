@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"k8s.io/client-go/kubernetes"
@@ -28,12 +29,12 @@ func main() {
 func runServer() error {
 	clientset, err := configKubeClient(kubeconfigPath)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
 
 	e := echo.New()
-	e.GET("/logs", logsHandler(clientset))
+	e.GET("/logs", eventsHandler(clientset))
 	e.Logger.Fatal(e.Start(":1323"))
 	return nil
 }
