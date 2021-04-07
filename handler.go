@@ -19,18 +19,23 @@ func eventsHandler(clientset *kubernetes.Clientset) echo.HandlerFunc {
 		enc := json.NewEncoder(c.Response())
 
 		label := getLabel(c.QueryParam("label"))
-
 		namespace := getNamespaceOr(c, defaultNamespace)
 
 		log.SetPrefix(label.Name + "[" + label.Value + "] - ")
 		log.SetFlags(0)
 
-		filter(clientset, namespace, label, func(eventLog *EventLog) {
-			if err := enc.Encode(eventLog); err != nil {
-				log.Println(err)
-			}
-			c.Response().Flush()
-		})
+		watcher := NewWatcher(clientset, namespace, label)
+
+		watcher.
+			For(&Kind{"Pod", &PodVerifier{clientset, namespace}}).
+			For(&Kind{"Service", &ServiceVerifier{clientset, namespace}}).
+			For(&Kind{"Deployment", &DeploymentVerifier{clientset, namespace}}).
+			Start(func(eventLog *EventLog) {
+				if err := enc.Encode(eventLog); err != nil {
+					log.Println(err)
+				}
+				c.Response().Flush()
+			})
 		return nil
 	}
 }
@@ -48,21 +53,8 @@ func getNamespaceOr(c echo.Context, defaultNamespace string) string {
 	return namespace
 }
 
-func selectFinder(clientset *kubernetes.Clientset, namespace string, kind string) FindResource {
-	switch kind {
-	case "Pod":
-		return &PodFinder{clientset, namespace}
-	case "Service":
-		return &ServiceFinder{clientset, namespace}
-	case "Deployment":
-		return &DeploymentFinder{clientset, namespace}
-	default:
-		return nil
-	}
-}
-
-func toEvent(eventObject runtime.Object) *corev1.Event {
-	bytes, _ := json.Marshal(eventObject)
+func toEvent(object runtime.Object) *corev1.Event {
+	bytes, _ := json.Marshal(object)
 	var event corev1.Event
 	json.Unmarshal(bytes, &event)
 	return &event

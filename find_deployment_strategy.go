@@ -8,12 +8,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type DeploymentFinder struct {
+type DeploymentVerifier struct {
 	clientset *kubernetes.Clientset
 	namespace string
 }
 
-func (f *DeploymentFinder) exists(name string, label Label) (bool, error) {
+func (f *DeploymentVerifier) exists(name string, label Label) (bool, error) {
 	deployment, err := f.clientset.AppsV1().
 		Deployments(f.namespace).
 		Get(context.TODO(), name, metav1.GetOptions{})

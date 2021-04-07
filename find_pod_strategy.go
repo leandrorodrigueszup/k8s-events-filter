@@ -8,12 +8,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type PodFinder struct {
+type PodVerifier struct {
 	clientset *kubernetes.Clientset
 	namespace string
 }
 
-func (f *PodFinder) exists(name string, label Label) (bool, error) {
+func (f *PodVerifier) exists(name string, label Label) (bool, error) {
 	pod, err := f.clientset.CoreV1().
 		Pods(f.namespace).
 		Get(context.TODO(), name, metav1.GetOptions{})

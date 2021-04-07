@@ -8,12 +8,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type ServiceFinder struct {
+type ServiceVerifier struct {
 	clientset *kubernetes.Clientset
 	namespace string
 }
 
-func (f *ServiceFinder) exists(name string, label Label) (bool, error) {
+func (f *ServiceVerifier) exists(name string, label Label) (bool, error) {
 	service, err := f.clientset.CoreV1().
 		Services(f.namespace).
 		Get(context.TODO(), name, metav1.GetOptions{})

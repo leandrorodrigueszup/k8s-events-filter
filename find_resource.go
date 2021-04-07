@@ -5,6 +5,6 @@ type Label struct {
 	Value string
 }
 
-type FindResource interface {
+type ResourceVerifier interface {
 	exists(name string, label Label) (bool, error)
 }
