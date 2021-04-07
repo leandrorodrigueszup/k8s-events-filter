@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -52,11 +50,4 @@ func getNamespaceOr(c echo.Context, defaultNamespace string) string {
 		return defaultNamespace
 	}
 	return namespace
-}
-
-func toEvent(object runtime.Object) *corev1.Event {
-	bytes, _ := json.Marshal(object)
-	var event corev1.Event
-	json.Unmarshal(bytes, &event)
-	return &event
 }

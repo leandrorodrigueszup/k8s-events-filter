@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -17,7 +19,7 @@ type EventDTO struct {
 }
 
 type Kind struct {
-	name   string
+	name     string
 	verifier ResourceVerifier
 }
 
@@ -42,7 +44,7 @@ func (w *Watcher) For(kind *Kind) *Watcher {
 	return w
 }
 
-func (w *Watcher) Start(callback func(*EventDTO)) error {
+func (w *Watcher) Start(f func(*EventDTO)) error {
 	eventsChan, err := w.clientset.CoreV1().
 		Events(w.namespace).
 		Watch(context.TODO(), metav1.ListOptions{})
@@ -55,14 +57,14 @@ func (w *Watcher) Start(callback func(*EventDTO)) error {
 		if e, ok := <-eventsChan.ResultChan(); ok {
 			event := toEvent(e.Object)
 
-			if finder, ok := w.kinds[event.InvolvedObject.Kind]; ok {
-				exists, err := finder.exists(event.InvolvedObject.Name, w.label)
+			if verifier, ok := w.kinds[event.InvolvedObject.Kind]; ok {
+				exists, err := verifier.exists(event.InvolvedObject.Name, w.label)
 				if err != nil {
 					log.Println(err)
 					continue
 				}
 				if exists {
-					callback(newEventDTO(event))
+					f(newEventDTO(event))
 				}
 			} else {
 				log.Printf("Resource Type '%s' Not Supported Yet\n", event.InvolvedObject.Kind)
@@ -87,4 +89,11 @@ func newEventDTO(event *corev1.Event) *EventDTO {
 
 func formatObjectDescription(involvedObject corev1.ObjectReference) string {
 	return involvedObject.Kind + "/" + involvedObject.Name
+}
+
+func toEvent(object runtime.Object) *corev1.Event {
+	bytes, _ := json.Marshal(object)
+	var event corev1.Event
+	json.Unmarshal(bytes, &event)
+	return &event
 }
