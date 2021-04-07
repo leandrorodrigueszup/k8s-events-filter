@@ -30,7 +30,7 @@ func eventsHandler(clientset *kubernetes.Clientset) echo.HandlerFunc {
 			For(&Kind{"Pod", &PodVerifier{clientset, namespace}}).
 			For(&Kind{"Service", &ServiceVerifier{clientset, namespace}}).
 			For(&Kind{"Deployment", &DeploymentVerifier{clientset, namespace}}).
-			Start(func(eventLog *EventLog) {
+			Start(func(eventLog *EventDTO) {
 				if err := enc.Encode(eventLog); err != nil {
 					log.Println(err)
 				}

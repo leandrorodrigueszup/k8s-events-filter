@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type EventLog struct {
+type EventDTO struct {
 	Type    string
 	Reason  string
 	Object  string
@@ -42,7 +42,7 @@ func (w *Watcher) For(kind *Kind) *Watcher {
 	return w
 }
 
-func (w *Watcher) Start(callback func(*EventLog)) error {
+func (w *Watcher) Start(callback func(*EventDTO)) error {
 	eventsChan, err := w.clientset.CoreV1().
 		Events(w.namespace).
 		Watch(context.TODO(), metav1.ListOptions{})
@@ -61,9 +61,8 @@ func (w *Watcher) Start(callback func(*EventLog)) error {
 					log.Println(err)
 					continue
 				}
-
 				if exists {
-					callback(newEventLog(event))
+					callback(newEventDTO(event))
 				}
 			} else {
 				log.Printf("Resource Type '%s' Not Supported Yet\n", event.InvolvedObject.Kind)
@@ -77,8 +76,8 @@ func (w *Watcher) Start(callback func(*EventLog)) error {
 	return nil
 }
 
-func newEventLog(event *corev1.Event) *EventLog {
-	return &EventLog{
+func newEventDTO(event *corev1.Event) *EventDTO {
+	return &EventDTO{
 		Type:    event.Type,
 		Reason:  event.Reason,
 		Object:  formatObjectDescription(event.InvolvedObject),

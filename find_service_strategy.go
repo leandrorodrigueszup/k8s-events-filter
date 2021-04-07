@@ -13,9 +13,9 @@ type ServiceVerifier struct {
 	namespace string
 }
 
-func (f *ServiceVerifier) exists(name string, label Label) (bool, error) {
-	service, err := f.clientset.CoreV1().
-		Services(f.namespace).
+func (v *ServiceVerifier) exists(name string, label Label) (bool, error) {
+	service, err := v.clientset.CoreV1().
+		Services(v.namespace).
 		Get(context.TODO(), name, metav1.GetOptions{})
 
 	if err != nil {

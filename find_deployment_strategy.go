@@ -13,9 +13,9 @@ type DeploymentVerifier struct {
 	namespace string
 }
 
-func (f *DeploymentVerifier) exists(name string, label Label) (bool, error) {
-	deployment, err := f.clientset.AppsV1().
-		Deployments(f.namespace).
+func (v *DeploymentVerifier) exists(name string, label Label) (bool, error) {
+	deployment, err := v.clientset.AppsV1().
+		Deployments(v.namespace).
 		Get(context.TODO(), name, metav1.GetOptions{})
 
 	if err != nil {

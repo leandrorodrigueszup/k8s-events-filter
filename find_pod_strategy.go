@@ -13,9 +13,9 @@ type PodVerifier struct {
 	namespace string
 }
 
-func (f *PodVerifier) exists(name string, label Label) (bool, error) {
-	pod, err := f.clientset.CoreV1().
-		Pods(f.namespace).
+func (v *PodVerifier) exists(name string, label Label) (bool, error) {
+	pod, err := v.clientset.CoreV1().
+		Pods(v.namespace).
 		Get(context.TODO(), name, metav1.GetOptions{})
 
 	if err != nil {
