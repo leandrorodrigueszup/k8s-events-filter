@@ -27,7 +27,7 @@ type Watcher struct {
 	clientset *kubernetes.Clientset
 	namespace string
 	label     Label
-	kinds     map[string]ResourceVerifier
+	observed  map[string]ResourceVerifier
 }
 
 func NewWatcher(clientset *kubernetes.Clientset, namespace string, label Label) *Watcher {
@@ -35,16 +35,16 @@ func NewWatcher(clientset *kubernetes.Clientset, namespace string, label Label) 
 		clientset: clientset,
 		namespace: namespace,
 		label:     label,
-		kinds:     make(map[string]ResourceVerifier),
+		observed:  make(map[string]ResourceVerifier),
 	}
 }
 
 func (w *Watcher) For(kind *Kind) *Watcher {
-	w.kinds[kind.name] = kind.verifier
+	w.observed[kind.name] = kind.verifier
 	return w
 }
 
-func (w *Watcher) Start(f func(*EventDTO)) error {
+func (w *Watcher) Start(cb func(*EventDTO)) error {
 	eventsChan, err := w.clientset.CoreV1().
 		Events(w.namespace).
 		Watch(context.TODO(), metav1.ListOptions{})
@@ -57,14 +57,14 @@ func (w *Watcher) Start(f func(*EventDTO)) error {
 		if e, ok := <-eventsChan.ResultChan(); ok {
 			event := toEvent(e.Object)
 
-			if verifier, ok := w.kinds[event.InvolvedObject.Kind]; ok {
+			if verifier, ok := w.observed[event.InvolvedObject.Kind]; ok {
 				exists, err := verifier.exists(event.InvolvedObject.Name, w.label)
 				if err != nil {
 					log.Println(err)
 					continue
 				}
 				if exists {
-					f(newEventDTO(event))
+					cb(newEventDTO(event))
 				}
 			} else {
 				log.Printf("Resource Type '%s' Not Supported Yet\n", event.InvolvedObject.Kind)
