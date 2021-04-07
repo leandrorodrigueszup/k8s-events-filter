@@ -18,7 +18,7 @@ func eventsHandler(clientset *kubernetes.Clientset) echo.HandlerFunc {
 		c.Response().WriteHeader(http.StatusOK)
 		enc := json.NewEncoder(c.Response())
 
-		label := getLabel(c.QueryParam("label"))
+		label := getLabel(c)
 		namespace := getNamespaceOr(c, defaultNamespace)
 
 		log.SetPrefix(label.Name + "[" + label.Value + "] - ")
@@ -40,7 +40,8 @@ func eventsHandler(clientset *kubernetes.Clientset) echo.HandlerFunc {
 	}
 }
 
-func getLabel(l string) Label {
+func getLabel(c echo.Context) Label {
+	l := c.QueryParam("label")
 	keyValue := strings.Split(l, "=")
 	return Label{keyValue[0], keyValue[1]}
 }
