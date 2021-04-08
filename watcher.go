@@ -58,6 +58,7 @@ func (w *Watcher) Start(cb func(*EventDTO)) error {
 			event := toEvent(e.Object)
 
 			if verifier, ok := w.observed[event.InvolvedObject.Kind]; ok {
+				// Here could have a cache for events from the same resource multiple times
 				exists, err := verifier.exists(event.InvolvedObject.Name, w.label)
 				if err != nil {
 					log.Println(err)
