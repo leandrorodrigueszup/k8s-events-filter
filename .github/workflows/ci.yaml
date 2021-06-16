@@ -17,8 +17,4 @@ jobs:
 
       - name: Build App
         run: |
-          gosd build .
-
-      - name: Run command
-        run: |
-          echo any test
+          go build .
