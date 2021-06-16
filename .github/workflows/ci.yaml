@@ -18,3 +18,7 @@ jobs:
       - name: Build App
         run: |
           go build .
+
+      - name: Run command
+        run: |
+          echo any test
